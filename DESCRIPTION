@@ -4,10 +4,6 @@ Title: Reducing Overfitting in Challenges With the BootLadderBoot Approach
 Version: 0.1.0
 Authors@R: person("Robert", "Allaway", email = "robert.allaway@sagebionetworks.org",
   role = c("aut", "cre"))
-  person("Andrew", "Lamb",
-  role = c("aut"))
-  person("Michael", "Mason",
-  role = c("aut"))
 Description: Implements a simplified BootLadderBoot approach (https://arxiv.org/pdf/1607.00091.pdf) for use in computational challenges.
 License: CC0
 Encoding: UTF-8

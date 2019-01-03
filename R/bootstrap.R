@@ -1,9 +1,4 @@
-#' @importFrom magrittr %>%
-#' @importFrom plyr aaply
-#' @importFrom plyr alply
-#'
 #' Calculate a bootstrapped score for an initial submission or subsequent submission.
-#'
 #' @param predictionsPath The relative path to the current prediction csv.
 #' @param predictionColname The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.
 #' @param goldStandardPath The relative path to the gold standard/test data csv.
@@ -17,7 +12,6 @@
 #' @param largerIsBetter Set this to FALSE if a smaller scoring metric indicates better performance (e.g. root mean squared error). Default TRUE.
 #' @param verbose Report step. Default FALSE.
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.
-#' @export
 #' @export
 bootLadderBoot <- function(predictionsPath,
                            predictionColname,
@@ -132,9 +126,9 @@ computeBayesFactor <- function(bootstrapMetricMatrix, bestTeamIndex, largerIsBet
   }
 }
 
-#'wrapper function to pass bootstrapped data to scoring function provided by user
-#'this allows user to provide a simple scoring function of the form function(gold, pred)
-#'where gold and pred are vectors with the gold standard data and the prediction data
+#wrapper function to pass bootstrapped data to scoring function provided by user
+#this allows user to provide a simple scoring function of the form function(gold, pred)
+#where gold and pred are vectors with the gold standard data and the prediction data
 indexedScore <- function(dataIndices, goldStandardMatrix, predictionsMatrix, scoreFun){
   gold <- goldStandardMatrix[dataIndices,]
   if(ncol(predictionsMatrix)>1){
@@ -143,4 +137,3 @@ indexedScore <- function(dataIndices, goldStandardMatrix, predictionsMatrix, sco
     scoreFun(gold = goldStandardMatrix[dataIndices,], pred = predictionsMatrix[dataIndices,])
   }
 }
-
