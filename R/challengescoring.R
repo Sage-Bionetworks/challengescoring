@@ -5,5 +5,7 @@
 #
 #' @import magrittr
 #' @import plyr
+#' @import doMC
+#' @import parallel
 #'
 "_PACKAGE"

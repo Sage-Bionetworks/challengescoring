@@ -95,8 +95,9 @@ bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun 
    # matrix, columns are boostraps, rows are samples
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
-  doMC::registerDoMC(cores = detectCores()-1)
 
+  doMC::registerDoMC(cores = parallel::detectCores()-1)
+  gc()
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
                       .fun = indexedScore,
