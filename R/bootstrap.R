@@ -64,26 +64,31 @@ bootLadderBoot <- function(predictionsPath,
   if(verbose == TRUE){print("joining bootstrapped data frames")}
 
   if(!is.null(prevPredictionsPath) & largerIsBetter == TRUE){ #test for previous prediction data and whether larger scores are better
-    K <- computeBayesFactor(bootstrapMetricMatrix, 2, largerIsBetter = TRUE) #compute bayes factor where a larger score is better
+    K <- computeBayesFactor(bootstrapMetricMatrix, 1, largerIsBetter = TRUE) #compute bayes factor where a larger score is better
     meanBS_new <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     meanBS_prev <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2])
-print(K)
-    if(K['pred'] > bayesThreshold & meanBS_new > meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+    if(K['prevpred'] > bayesThreshold & meanBS_new > meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+
+      if(verbose == TRUE){print("Larger is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     }else{
-      returnedScore <- NA ##if within K threshold, return NA for score
+
+      if(verbose == TRUE){print("Larger is better : previous prediction is better or bayes threshold not met")}
+      returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return previous bootstrap score
     }
   }else if(!is.null(prevPredictionsPath) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
-     K <- computeBayesFactor(bootstrapMetricMatrix, 2, largerIsBetter = FALSE)
+     K <- computeBayesFactor(bootstrapMetricMatrix, 1, largerIsBetter = FALSE)
     meanBS_new <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     meanBS_prev <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2])
-    if(K['pred'] > bayesThreshold & meanBS_new < meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+    if(K['prevpred'] > bayesThreshold & meanBS_new < meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+      if(verbose == TRUE){print("Smaller is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     }else{
-      returnedScore <- NA ##if within K threshold, return NA for score
+      if(verbose == TRUE){print("Smaller is better : previous prediction is better or bayes threshold not met")}
+      returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return NA for score
     }
   }else if(is.null(prevPredictionsPath)){ ## if there is no previous file, simply return bootstrapped score
-    if(verbose == TRUE){print("no previous file")}
+    if(verbose == TRUE){print("no previous submission")}
     returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
   }
   return(returnedScore)
@@ -116,14 +121,20 @@ bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun 
 computeBayesFactor <- function(bootstrapMetricMatrix, bestTeamIndex, largerIsBetter = TRUE){
   if(largerIsBetter==TRUE){
     M <- as.data.frame(bootstrapMetricMatrix - bootstrapMetricMatrix[,bestTeamIndex])
-    print(M)
-    K <- apply(M ,2, function(x) {sum(x <= 0)/sum(x > 0)})
-    print(K)
+    K <- apply(M ,2, function(x) {
+      k <- sum(x <= 0)/sum(x > 0)
+      k <- max(c(k,1/k)) ##calculate K where values <0 are denominator OR numerator, return larger one
+      ##need to review above strategy with MM
+       })
     K[bestTeamIndex] <- 0
     return(K)
   }else{
     M <- as.data.frame(bootstrapMetricMatrix - (bootstrapMetricMatrix[,bestTeamIndex]))
-    K <- apply(M ,2, function(x) {sum(-x <= 0)/sum(-x > 0)})
+    K <- apply(M ,2, function(x) {
+      k <- sum(-x <= 0)/sum(-x > 0)
+      k <- max(c(k,1/k)) ##calculate K where values <0 are denominator OR numerator, return larger one
+      #need to review above strategy with MM
+       })
     K[bestTeamIndex] <- 0
     return(K)
   }
