@@ -10,4 +10,4 @@ Encoding: UTF-8
 LazyData: true
 Imports: plyr, dplyr, magrittr, purrr, doMC
 Suggests: testthat
-RoxygenNote: 6.1.0.9000
+RoxygenNote: 6.1.1
