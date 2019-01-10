@@ -1,9 +1,9 @@
 #' Calculate a bootstrapped score for an initial submission or subsequent submission.
-#' @param predictionsPath The relative path to the current prediction csv.
+#' @param predictions The relative path to the current prediction csv.
 #' @param predictionColname The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.
-#' @param goldStandardPath The relative path to the gold standard/test data csv.
+#' @param goldStandard The relative path to the gold standard/test data csv.
 #' @param goldStandardColname The name of the column in the gold standard csv that contains numeric prediction values.
-#' @param prevPredictionsPath If a previous prediction file for this team/participant already exists, pass in the path here. Prediction colname must match.
+#' @param prevPredictions If a previous prediction file for this team/participant already exists, pass in the path here. Prediction colname must match.
 #' @param scoreFun A scoring function. Default is Spearman correlation. Any function can be passed as long as it can calculate a score from two vectors (gold standard first, and prediction values second).
 #' @param bootstrapN Number of total bootstraps to perform (default 10000).
 #' @param reportBootstrapN Number of bootstraps to base returned score off of (default 10). The greater this value, the more accurate of a result is returned (and possibly the more the test data can be overfit).
@@ -14,11 +14,11 @@
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.
 #' @return A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 #' @export
-bootLadderBoot <- function(predictionsPath,
+bootLadderBoot <- function(predictions,
                            predictionColname,
-                           goldStandardPath,
+                           goldStandard,
                            goldStandardColname,
-                           prevPredictionsPath = NULL,
+                           prevPredictions = NULL,
                            scoreFun = spearman,
                            bootstrapN = 10000,
                            reportBootstrapN = 10,
@@ -28,11 +28,19 @@ bootLadderBoot <- function(predictionsPath,
                            verbose = FALSE,
                            doParallel = FALSE){
 
-  if(verbose == TRUE){print("reading gold standard file")}
-  goldStandardDF <- read.csv(goldStandardPath) ##reads the gold standard file
+  if(is.data.frame(goldStandard)){
+    goldStandardDF<-goldStandard
+  }else{
+    if(verbose == TRUE){print("reading gold standard file")}
+    goldStandardDF <- read.csv(goldStandardPath) ##reads the gold standard file
+  }
 
-  if(verbose == TRUE){print("reading prediction file")}
-  predictionsDF <- read.csv(predictionsPath) ## reads the prediction file
+  if(is.data.frame(predictions)){
+    predictionsDF<-predictions
+  }else{
+    if(verbose == TRUE){print("reading prediction file")}
+    predictionsDF <- read.csv(predictionsPath) ## reads the prediction file
+  }
 
   if(is.null(prevPredictionsPath)){ ## tests for previous submission -if none, just joins gold standard and predicition into one dataframe (ensures matched order on id columns)
     joinedData <- dplyr::full_join(goldStandardDF, predictionsDF) %>%
@@ -45,8 +53,13 @@ bootLadderBoot <- function(predictionsPath,
     # INSERT TEST FOR MATCHING COLUMN NAMES
 
   }else{ ## if there is a previous submission, that gets read in also, and joined to this dataframe (ensures matched order on id columns)
-    if(verbose == TRUE){print("reading previous prediction file")}
-    prevPredictionsDF <- read.csv(prevPredictionsPath) %>% dplyr::mutate_("prevpred"=predictionColname) %>% dplyr::select(-predictionColname)
+    if(is.data.frame(prevPredictions)){
+      prevPredictionsDF<-prevPredictions
+    }else{
+      if(verbose == TRUE){print("reading previous prediction file")}
+      prevPredictionsDF <- read.csv(prevPredictionsPath) %>% dplyr::mutate_("prevpred"=predictionColname) %>% dplyr::select(-predictionColname)
+    }
+
     joinedData <- dplyr::full_join(goldStandardDF, predictionsDF) %>%
       dplyr::full_join(prevPredictionsDF) %>%
       dplyr::select_(goldStandardColname, predictionColname, "prevpred") %>%

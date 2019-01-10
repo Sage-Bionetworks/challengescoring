@@ -4,22 +4,22 @@
 \alias{bootLadderBoot}
 \title{Calculate a bootstrapped score for an initial submission or subsequent submission.}
 \usage{
-bootLadderBoot(predictionsPath, predictionColname, goldStandardPath,
-  goldStandardColname, prevPredictionsPath = NULL, scoreFun = spearman,
+bootLadderBoot(predictions, predictionColname, goldStandard,
+  goldStandardColname, prevPredictions = NULL, scoreFun = spearman,
   bootstrapN = 10000, reportBootstrapN = 10, bayesThreshold = 3,
   seed = 98121, largerIsBetter = TRUE, verbose = FALSE,
   doParallel = FALSE)
 }
 \arguments{
-\item{predictionsPath}{The relative path to the current prediction csv.}
+\item{predictions}{The relative path to the current prediction csv.}
 
 \item{predictionColname}{The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.}
 
-\item{goldStandardPath}{The relative path to the gold standard/test data csv.}
+\item{goldStandard}{The relative path to the gold standard/test data csv.}
 
 \item{goldStandardColname}{The name of the column in the gold standard csv that contains numeric prediction values.}
 
-\item{prevPredictionsPath}{If a previous prediction file for this team/participant already exists, pass in the path here. Prediction colname must match.}
+\item{prevPredictions}{If a previous prediction file for this team/participant already exists, pass in the path here. Prediction colname must match.}
 
 \item{scoreFun}{A scoring function. Default is Spearman correlation. Any function can be passed as long as it can calculate a score from two vectors (gold standard first, and prediction values second).}
 
