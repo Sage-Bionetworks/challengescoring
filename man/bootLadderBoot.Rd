@@ -8,7 +8,7 @@ bootLadderBoot(predictionsPath, predictionColname, goldStandardPath,
   goldStandardColname, prevPredictionsPath = NULL, scoreFun = spearman,
   bootstrapN = 10000, reportBootstrapN = 10, bayesThreshold = 3,
   seed = 98121, largerIsBetter = TRUE, verbose = FALSE,
-  doParallel = TRUE)
+  doParallel = FALSE)
 }
 \arguments{
 \item{predictionsPath}{The relative path to the current prediction csv.}
@@ -36,6 +36,9 @@ bootLadderBoot(predictionsPath, predictionColname, goldStandardPath,
 \item{verbose}{Report step. Default FALSE.}
 
 \item{doParallel}{Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.}
+}
+\value{
+A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 }
 \description{
 Calculate a bootstrapped score for an initial submission or subsequent submission.

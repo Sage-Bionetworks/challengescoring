@@ -12,6 +12,7 @@
 #' @param largerIsBetter Set this to FALSE if a smaller scoring metric indicates better performance (e.g. root mean squared error). Default TRUE.
 #' @param verbose Report step. Default FALSE.
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.
+#' @return A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 #' @export
 bootLadderBoot <- function(predictionsPath,
                            predictionColname,
@@ -41,14 +42,7 @@ bootLadderBoot <- function(predictionsPath,
     goldStandardMatrix <- joinedData[,1, drop = FALSE] %>% as.matrix() #make a gold standard matrix (1 column)
     predictionsMatrix <- joinedData[,2, drop = FALSE] %>% as.matrix() #make a prediction data matrix (1 column)
 
-
-    #'
-    #' INSERT TEST FOR MATCHING COLUMN NAMES
-    #'
-    #'
-    #'
-    #'
-
+    # INSERT TEST FOR MATCHING COLUMN NAMES
 
   }else{ ## if there is a previous submission, that gets read in also, and joined to this dataframe (ensures matched order on id columns)
     if(verbose == TRUE){print("reading previous prediction file")}
@@ -72,10 +66,17 @@ bootLadderBoot <- function(predictionsPath,
 
   if(verbose == TRUE){print("joining bootstrapped data frames")}
 
+  meanBS_new <- mean(bootstrapMetricMatrix[1:bootstrapN,1])
+  meanBS_prev <- mean(bootstrapMetricMatrix[1:bootstrapN,2])
+
+  if(largerIsBetter == T & meanBS_new<=meanBS_prev){invBayes = T}
+  if(largerIsBetter == T & meanBS_new>meanBS_prev){invBayes = F}
+  if(largerIsBetter == F & meanBS_new<=meanBS_prev){invBayes = T}
+  if(largerIsBetter == F & meanBS_new>meanBS_prev){invBayes = F}
+
   if(!is.null(prevPredictionsPath) & largerIsBetter == TRUE){ #test for previous prediction data and whether larger scores are better
-    K <- computeBayesFactor(bootstrapMetricMatrix, 2, largerIsBetter = TRUE) #compute bayes factor where a larger score is better
-    meanBS_new <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
-    meanBS_prev <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2])
+    K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes) #compute bayes factor where a larger score is better
+
     if(K['pred'] > bayesThreshold & meanBS_new > meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
 
       if(verbose == TRUE){print("Larger is better : current prediction is better")}
@@ -86,7 +87,7 @@ bootLadderBoot <- function(predictionsPath,
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return previous bootstrap score
     }
   }else if(!is.null(prevPredictionsPath) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
-     K <- computeBayesFactor(bootstrapMetricMatrix, 2, largerIsBetter = FALSE)
+     K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes)
     meanBS_new <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     meanBS_prev <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2])
     if(K['pred'] > bayesThreshold & meanBS_new < meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
@@ -100,17 +101,33 @@ bootLadderBoot <- function(predictionsPath,
     if(verbose == TRUE){print("no previous submission")}
     returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
   }
-  return(returnedScore)
+
+  metBayesCutoff <- c(K['pred']>bayesThreshold)
+  if(verbose == TRUE){
+    return(list("score" = returnedScore, "metCutoff" = metBayesCutoff, "bayes" = K['pred']))
+  }else{
+    return(list("score" = returnedScore, "metCutoff" = metBayesCutoff))
+  }
 }
 
-# this function creates paired bootstrap indices and then scores the bootstrapped data using the indexedScore function
-bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun = scoreFun, bootstrapN = bootstrapN, seed = seed, doParallel = T, ...){
+#' Create an matrix of bootstrapped predictions.
+#' @param goldStandardMatrix A single column matrix with the gold standard predictions.
+#' @param predictionsMatrix Columns of prediction sets, in the same order as the goldStandardMatrix.
+#' @param bootstrapN Number of total bootstraps to perform.
+#' @param seed Set a seed for bootstrap sampling.
+#' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default FALSE.
+#' @return An MxN matrix of bootstrapped predictions where M is the number of bootstraps performed and N is the number of prediction sets.
+#' @export
+bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun = scoreFun, bootstrapN = bootstrapN, seed = seed, doParallel = F, ...){
 
    # matrix, columns are boostraps, rows are samples
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
 
-  doMC::registerDoMC(cores = parallel::detectCores()-1)
+  numCores <- parallel::detectCores()-1
+  if(numCores == 0){numCores <- 1} ## to avoid error on single core machines
+
+  doMC::registerDoMC(cores = numCores)
   gc()
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
@@ -126,19 +143,25 @@ bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun 
   return(bsMetric)
 }
 
-#calculate bayes factor from a set of bootstrapped scores
-#'
-#' change best team index to reference prediction index
-#'
-computeBayesFactor <- function(bootstrapMetricMatrix, refPredIndex, largerIsBetter = TRUE){
+#' Calculate one or more Bayes factors using a bootstrapMetricMatrix.
+#' @param bootstrapMetricMatrix An NxM matrix where M is the number of bootstraps performed and N is the number of prediction sets (output of bootstrappingMetric function).
+#' @param refPredIndex Column index of the reference prediction to calculate Bayes factor (e.g. best prediction).
+#' @param invertBayes Boolean to invert Bayes factor.
+#' if(largerIsBetter == T & currentPred<=refPred){invertBayes = T},
+#' if(largerIsBetter == T & currentPred>refPred){invertBayes = F},
+#' if(largerIsBetter == F & currentPred<=refPred){invertBayes = T},
+#' if(largerIsBetter == F & currentPred>refPred){invertBayes = F}
+#' @return A matrix of Bayes factors.
+#' @export
+computeBayesFactor <- function(bootstrapMetricMatrix, refPredIndex, invertBayes){
 
     M <- as.data.frame(bootstrapMetricMatrix - bootstrapMetricMatrix[,refPredIndex])
     K <- apply(M ,2, function(x) {
       k <- sum(x >= 0)/sum(x < 0)
-      if(largerIsBetter==FALSE){k <- 1/k}
       return(k)
     })
     K[refPredIndex] <- 0
+    if(invertBayes == T){K <- 1/K}
     return(K)
 }
 
