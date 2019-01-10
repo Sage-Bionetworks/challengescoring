@@ -28,6 +28,14 @@ bootLadderBoot <- function(predictions,
                            verbose = FALSE,
                            doParallel = FALSE){
 
+  if(bootstrapN < reportBootstrapN){
+    stop("bootstrapN must be >= reportBootstrapN")
+  }
+
+  if(bayesThreshold < 0){
+    stop("bayesThreshold must be >0")
+  }
+
   if(is.data.frame(goldStandard)){
     goldStandardDF<-goldStandard
   }else{
