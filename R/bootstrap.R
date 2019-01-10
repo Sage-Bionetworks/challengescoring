@@ -1,9 +1,9 @@
 #' Calculate a bootstrapped score for an initial submission or subsequent submission.
-#' @param predictions The relative path to the current prediction csv.
+#' @param predictions The relative path to the current prediction csv, or a data frame.
 #' @param predictionColname The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.
-#' @param goldStandard The relative path to the gold standard/test data csv.
+#' @param goldStandard The relative path to the gold standard/test data csv, or a data frame.
 #' @param goldStandardColname The name of the column in the gold standard csv that contains numeric prediction values.
-#' @param prevPredictions If a previous prediction file for this team/participant already exists, pass in the path here. Prediction colname must match.
+#' @param prevPredictions If a previous prediction file for this team/participant already exists, pass in the path or data frame here. Prediction colname must match.
 #' @param scoreFun A scoring function. Default is Spearman correlation. Any function can be passed as long as it can calculate a score from two vectors (gold standard first, and prediction values second).
 #' @param bootstrapN Number of total bootstraps to perform (default 10000).
 #' @param reportBootstrapN Number of bootstraps to base returned score off of (default 10). The greater this value, the more accurate of a result is returned (and possibly the more the test data can be overfit).
@@ -32,17 +32,17 @@ bootLadderBoot <- function(predictions,
     goldStandardDF<-goldStandard
   }else{
     if(verbose == TRUE){print("reading gold standard file")}
-    goldStandardDF <- read.csv(goldStandardPath) ##reads the gold standard file
+    goldStandardDF <- read.csv(goldStandard) ##reads the gold standard file
   }
 
   if(is.data.frame(predictions)){
     predictionsDF<-predictions
   }else{
     if(verbose == TRUE){print("reading prediction file")}
-    predictionsDF <- read.csv(predictionsPath) ## reads the prediction file
+    predictionsDF <- read.csv(predictions) ## reads the prediction file
   }
 
-  if(is.null(prevPredictionsPath)){ ## tests for previous submission -if none, just joins gold standard and predicition into one dataframe (ensures matched order on id columns)
+  if(is.null(prevPredictions)){ ## tests for previous submission -if none, just joins gold standard and predicition into one dataframe (ensures matched order on id columns)
     joinedData <- dplyr::full_join(goldStandardDF, predictionsDF) %>%
       dplyr::select_(goldStandardColname, predictionColname) %>%
       purrr::set_names('gold', 'pred')
@@ -54,10 +54,10 @@ bootLadderBoot <- function(predictions,
 
   }else{ ## if there is a previous submission, that gets read in also, and joined to this dataframe (ensures matched order on id columns)
     if(is.data.frame(prevPredictions)){
-      prevPredictionsDF<-prevPredictions
+      prevPredictionsDF<-prevPredictions %>% dplyr::mutate_("prevpred"=predictionColname) %>% dplyr::select(-predictionColname)
     }else{
       if(verbose == TRUE){print("reading previous prediction file")}
-      prevPredictionsDF <- read.csv(prevPredictionsPath) %>% dplyr::mutate_("prevpred"=predictionColname) %>% dplyr::select(-predictionColname)
+      prevPredictionsDF <- read.csv(prevPredictions) %>% dplyr::mutate_("prevpred"=predictionColname) %>% dplyr::select(-predictionColname)
     }
 
     joinedData <- dplyr::full_join(goldStandardDF, predictionsDF) %>%
@@ -79,17 +79,18 @@ bootLadderBoot <- function(predictions,
 
   if(verbose == TRUE){print("joining bootstrapped data frames")}
 
-  meanBS_new <- mean(bootstrapMetricMatrix[1:bootstrapN,1])
-  meanBS_prev <- mean(bootstrapMetricMatrix[1:bootstrapN,2])
+  if(!is.null(prevPredictions)){
+    meanBS_new <- mean(bootstrapMetricMatrix[1:bootstrapN,1])
+    meanBS_prev <- mean(bootstrapMetricMatrix[1:bootstrapN,2])
+    if(largerIsBetter == T & meanBS_new<=meanBS_prev){invBayes = T}
+    if(largerIsBetter == T & meanBS_new>meanBS_prev){invBayes = F}
+    if(largerIsBetter == F & meanBS_new<=meanBS_prev){invBayes = T}
+    if(largerIsBetter == F & meanBS_new>meanBS_prev){invBayes = F}
+  }
 
-  if(largerIsBetter == T & meanBS_new<=meanBS_prev){invBayes = T}
-  if(largerIsBetter == T & meanBS_new>meanBS_prev){invBayes = F}
-  if(largerIsBetter == F & meanBS_new<=meanBS_prev){invBayes = T}
-  if(largerIsBetter == F & meanBS_new>meanBS_prev){invBayes = F}
-
-  if(!is.null(prevPredictionsPath) & largerIsBetter == TRUE){ #test for previous prediction data and whether larger scores are better
+  if(!is.null(prevPredictions) & largerIsBetter == TRUE){ #test for previous prediction data and whether larger scores are better
     K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes) #compute bayes factor where a larger score is better
-
+    metBayesCutoff <- c(K['pred']>bayesThreshold)
     if(K['pred'] > bayesThreshold & meanBS_new > meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
 
       if(verbose == TRUE){print("Larger is better : current prediction is better")}
@@ -99,10 +100,9 @@ bootLadderBoot <- function(predictions,
       if(verbose == TRUE){print("Larger is better : previous prediction is better or bayes threshold not met")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return previous bootstrap score
     }
-  }else if(!is.null(prevPredictionsPath) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
+  }else if(!is.null(prevPredictions) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
      K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes)
-    meanBS_new <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
-    meanBS_prev <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2])
+     metBayesCutoff <- c(K['pred']>bayesThreshold)
     if(K['pred'] > bayesThreshold & meanBS_new < meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
       if(verbose == TRUE){print("Smaller is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
@@ -110,16 +110,18 @@ bootLadderBoot <- function(predictions,
       if(verbose == TRUE){print("Smaller is better : previous prediction is better or bayes threshold not met")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return NA for score
     }
-  }else if(is.null(prevPredictionsPath)){ ## if there is no previous file, simply return bootstrapped score
+  }else if(is.null(prevPredictions)){ ## if there is no previous file, simply return bootstrapped score
     if(verbose == TRUE){print("no previous submission")}
     returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
   }
 
-  metBayesCutoff <- c(K['pred']>bayesThreshold)
-  if(verbose == TRUE){
+
+  if(verbose == TRUE & !is.null(prevPredictions)){
     return(list("score" = returnedScore, "metCutoff" = metBayesCutoff, "bayes" = K['pred']))
-  }else{
+  }else if(verbose == FALSE & !is.null(prevPredictions)){
     return(list("score" = returnedScore, "metCutoff" = metBayesCutoff))
+  }else{
+    return(list("score" = returnedScore, "metCutoff" = NA))
   }
 }
 

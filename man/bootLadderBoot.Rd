@@ -11,15 +11,15 @@ bootLadderBoot(predictions, predictionColname, goldStandard,
   doParallel = FALSE)
 }
 \arguments{
-\item{predictions}{The relative path to the current prediction csv.}
+\item{predictions}{The relative path to the current prediction csv, or a data frame.}
 
 \item{predictionColname}{The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.}
 
-\item{goldStandard}{The relative path to the gold standard/test data csv.}
+\item{goldStandard}{The relative path to the gold standard/test data csv, or a data frame.}
 
 \item{goldStandardColname}{The name of the column in the gold standard csv that contains numeric prediction values.}
 
-\item{prevPredictions}{If a previous prediction file for this team/participant already exists, pass in the path here. Prediction colname must match.}
+\item{prevPredictions}{If a previous prediction file for this team/participant already exists, pass in the path or data frame here. Prediction colname must match.}
 
 \item{scoreFun}{A scoring function. Default is Spearman correlation. Any function can be passed as long as it can calculate a score from two vectors (gold standard first, and prediction values second).}
 
