@@ -125,11 +125,11 @@ bootLadderBoot <- function(predictions,
 
 
   if(verbose == TRUE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metCutoff" = metBayesCutoff, "bayes" = K['pred']))
+    return(list("score" = returnedScore, "metBayesCutoff" = as.vector(metBayesCutoff), "bayes" = as.vector(K['pred'])))
   }else if(verbose == FALSE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metCutoff" = metBayesCutoff))
+    return(list("score" = returnedScore, "metBayesCutoff" = as.vector(metBayesCutoff['pred'])))
   }else{
-    return(list("score" = returnedScore, "metCutoff" = NA))
+    return(list("score" = returnedScore, "metBayesCutoff" = NA))
   }
 }
 
