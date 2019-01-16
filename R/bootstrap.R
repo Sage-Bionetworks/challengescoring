@@ -147,11 +147,14 @@ bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun 
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
 
-  numCores <- parallel::detectCores()-1
-  if(numCores == 0){numCores <- 1} ## to avoid error on single core machines
+  numCores <- parallel::detectCores()
+  if(numCores == 1){doParallel = FALSE}
 
-  doMC::registerDoMC(cores = numCores)
+  if(numCores > 1 & doParallel == TRUE){
+  doMC::registerDoMC(cores = numCores-1)
   gc()
+  }
+
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
                       .fun = indexedScore,
