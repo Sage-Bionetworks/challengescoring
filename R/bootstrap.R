@@ -1,4 +1,4 @@
-#' Calculate a bootstrapped score for an initial submission or subsequent submission.
+#' Calculate a bootstrapped score for an initial submission or subsequent submission. blb stands for boot-ladder-boot.
 #' @param predictions The relative path to the current prediction csv, or a data frame.
 #' @param predictionColname The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.
 #' @param goldStandard The relative path to the gold standard/test data csv, or a data frame.
@@ -12,9 +12,10 @@
 #' @param largerIsBetter Set this to FALSE if a smaller scoring metric indicates better performance (e.g. root mean squared error). Default TRUE.
 #' @param verbose Report step. Default FALSE.
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.
+#' @param registeredCores Set TRUE if cores have already been registered using doMC::registerDoMC(). Default FALSE.
 #' @return A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 #' @export
-bootLadderBoot <- function(predictions,
+blb <- function(predictions,
                            predictionColname,
                            goldStandard,
                            goldStandardColname,
@@ -141,21 +142,16 @@ bootLadderBoot <- function(predictions,
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default FALSE.
 #' @return An MxN matrix of bootstrapped predictions where M is the number of bootstraps performed and N is the number of prediction sets.
 #' @export
-bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun = scoreFun, bootstrapN = bootstrapN, seed = seed, doParallel = F, ...){
+bootstrappingMetric <- function(goldStandardMatrix,
+                                predictionsMatrix,
+                                scoreFun = scoreFun,
+                                bootstrapN = bootstrapN,
+                                seed = seed,
+                                doParallel = F, ...){
 
    # matrix, columns are boostraps, rows are samples
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
-
-  if(doParallel){
-      numCores <- parallel::detectCores()
-      if(any(is.na(numCores), is.null(numCores), numCores <= 1)){
-          doParallel <<- FALSE
-      } else {
-          doMC::registerDoMC(cores = numCores-1)
-          gc()
-      }
-  } 
 
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
@@ -181,7 +177,9 @@ bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun 
 #' if(largerIsBetter == F & currentPred>refPred){invertBayes = F}
 #' @return A matrix of Bayes factors.
 #' @export
-computeBayesFactor <- function(bootstrapMetricMatrix, refPredIndex, invertBayes){
+computeBayesFactor <- function(bootstrapMetricMatrix,
+                               refPredIndex,
+                               invertBayes){
 
     M <- as.data.frame(bootstrapMetricMatrix - bootstrapMetricMatrix[,refPredIndex])
     K <- apply(M ,2, function(x) {
@@ -196,7 +194,11 @@ computeBayesFactor <- function(bootstrapMetricMatrix, refPredIndex, invertBayes)
 #wrapper function to pass bootstrapped data to scoring function provided by user
 #this allows user to provide a simple scoring function of the form function(gold, pred)
 #where gold and pred are vectors with the gold standard data and the prediction data
-indexedScore <- function(dataIndices, goldStandardMatrix, predictionsMatrix, scoreFun){
+indexedScore <- function(dataIndices,
+                         goldStandardMatrix,
+                         predictionsMatrix,
+                         scoreFun){
+
   gold <- goldStandardMatrix[dataIndices,]
   if(ncol(predictionsMatrix)>1){
     plyr::aaply(predictionsMatrix[dataIndices,], 2, scoreFun, gold = gold)
