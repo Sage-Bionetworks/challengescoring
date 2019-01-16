@@ -15,7 +15,7 @@
 #' @param registeredCores Set TRUE if cores have already been registered using doMC::registerDoMC(). Default FALSE.
 #' @return A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 #' @export
-blb <- function(predictions,
+bootLadderBoot <- function(predictions,
                            predictionColname,
                            goldStandard,
                            goldStandardColname,
@@ -152,6 +152,8 @@ bootstrappingMetric <- function(goldStandardMatrix,
    # matrix, columns are boostraps, rows are samples
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
+
+  if(foreach::getDoParWorkers()==1 & doParallel){stop("doParallel set to TRUE, but no parallel backend is registered. See doMC or doParallel packages.")}
 
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
