@@ -153,7 +153,7 @@ bootstrappingMetric <- function(goldStandardMatrix,
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
 
-  if(foreach::getDoParWorkers()==1 & doParallel){stop("doParallel set to TRUE, but no parallel backend is registered. See doMC or doParallel packages.")}
+  if(foreach::getDoParWorkers()==1 & doParallel){stop("doParallel set to TRUE, but no parallel backend is registered. See doMC or doParallel packages, or set doParallel = FALSE.")}
 
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
