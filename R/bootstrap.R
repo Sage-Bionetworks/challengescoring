@@ -12,7 +12,6 @@
 #' @param largerIsBetter Set this to FALSE if a smaller scoring metric indicates better performance (e.g. root mean squared error). Default TRUE.
 #' @param verbose Report step. Default FALSE.
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.
-#' @param registeredCores Set TRUE if cores have already been registered using doMC::registerDoMC(). Default FALSE.
 #' @return A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 #' @export
 bootLadderBoot <- function(predictions,
