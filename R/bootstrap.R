@@ -1,4 +1,4 @@
-#' Calculate a bootstrapped score for an initial submission or subsequent submission. blb stands for boot-ladder-boot.
+#' Calculate a bootstrapped score for an initial submission or subsequent submission.
 #' @param predictions The relative path to the current prediction csv, or a data frame.
 #' @param predictionColname The name of the column in the prediction csv that contains numeric prediction values. If also using a previous prediction file, must be the same name.
 #' @param goldStandard The relative path to the gold standard/test data csv, or a data frame.
