@@ -108,6 +108,11 @@ bootLadderBoot <- function(predictions,
       if(verbose == TRUE){print("Larger is better : previous prediction is better or bayes threshold not met")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return previous bootstrap score
     }
+    if(verbose == TRUE){
+      print(paste0("Bayes factor: ", K['pred']))
+      print(paste0("Bayes cutoff is: ", bayesThreshold))
+      print(paste0("Met cutoff: ", metBayesCutoff))
+    }
   }else if(!is.null(prevPredictions) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
      K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes)
      metBayesCutoff <- c(K['pred']>bayesThreshold)
@@ -118,6 +123,11 @@ bootLadderBoot <- function(predictions,
       if(verbose == TRUE){print("Smaller is better : previous prediction is better or bayes threshold not met")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return NA for score
     }
+     if(verbose == TRUE){
+       print(paste0("Bayes factor: ", K['pred']))
+       print(paste0("Bayes cutoff is: ", bayesThreshold))
+       print(paste0("Met cutoff: ", metBayesCutoff))
+     }
   }else if(is.null(prevPredictions)){ ## if there is no previous file, simply return bootstrapped score
     if(verbose == TRUE){print("no previous submission")}
     returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])

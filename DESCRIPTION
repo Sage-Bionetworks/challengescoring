@@ -12,6 +12,8 @@ Imports: plyr, dplyr, magrittr, purrr, foreach
 Suggests: 
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    pROC,
+    Hmisc
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr

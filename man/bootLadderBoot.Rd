@@ -2,7 +2,7 @@
 % Please edit documentation in R/bootstrap.R
 \name{bootLadderBoot}
 \alias{bootLadderBoot}
-\title{Calculate a bootstrapped score for an initial submission or subsequent submission. blb stands for boot-ladder-boot.}
+\title{Calculate a bootstrapped score for an initial submission or subsequent submission.}
 \usage{
 bootLadderBoot(predictions, predictionColname, goldStandard,
   goldStandardColname, prevPredictions = NULL, scoreFun = spearman,
@@ -36,12 +36,10 @@ bootLadderBoot(predictions, predictionColname, goldStandard,
 \item{verbose}{Report step. Default FALSE.}
 
 \item{doParallel}{Bootstrap in parallel. Only works on UNIX based OS. Default TRUE.}
-
-\item{registeredCores}{Set TRUE if cores have already been registered using doMC::registerDoMC(). Default FALSE.}
 }
 \value{
 A named list with a bootstrapped score and a boolean stating whether the bayesThreshold was met. If verbose == T, also returns the calculated Bayes factor.
 }
 \description{
-Calculate a bootstrapped score for an initial submission or subsequent submission. blb stands for boot-ladder-boot.
+Calculate a bootstrapped score for an initial submission or subsequent submission.
 }
