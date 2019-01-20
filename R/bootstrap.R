@@ -98,8 +98,8 @@ bootLadderBoot <- function(predictions,
 
   if(!is.null(prevPredictions) & largerIsBetter == TRUE){ #test for previous prediction data and whether larger scores are better
     K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes) #compute bayes factor where a larger score is better
-    metBayesCutoff <- c(K['pred']>bayesThreshold)
-    if(K['pred'] > bayesThreshold & meanBS_new > meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+    metCutoff <- c(K['pred']>bayesThreshold & meanBS_new > meanBS_prev)
+    if(metCutoff){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
 
       if(verbose == TRUE){print("Larger is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
@@ -111,12 +111,12 @@ bootLadderBoot <- function(predictions,
     if(verbose == TRUE){
       print(paste0("Bayes factor: ", K['pred']))
       print(paste0("Bayes cutoff is: ", bayesThreshold))
-      print(paste0("Met cutoff: ", metBayesCutoff))
+      print(paste0("Met cutoff: ", metCutoff))
     }
   }else if(!is.null(prevPredictions) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
      K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes)
-     metBayesCutoff <- c(K['pred']>bayesThreshold)
-    if(K['pred'] > bayesThreshold & meanBS_new < meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+     metCutoff <- c(K['pred']>bayesThreshold & meanBS_new < meanBS_prev)
+    if(metCutoff){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
       if(verbose == TRUE){print("Smaller is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     }else{
@@ -126,7 +126,7 @@ bootLadderBoot <- function(predictions,
      if(verbose == TRUE){
        print(paste0("Bayes factor: ", K['pred']))
        print(paste0("Bayes cutoff is: ", bayesThreshold))
-       print(paste0("Met cutoff: ", metBayesCutoff))
+       print(paste0("Met cutoff: ", metCutoff))
      }
   }else if(is.null(prevPredictions)){ ## if there is no previous file, simply return bootstrapped score
     if(verbose == TRUE){print("no previous submission")}
@@ -135,11 +135,11 @@ bootLadderBoot <- function(predictions,
 
 
   if(verbose == TRUE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metBayesCutoff" = as.vector(metBayesCutoff), "bayes" = as.vector(K['pred'])))
+    return(list("score" = returnedScore, "metCutoff" = as.vector(metCutoff), "bayes" = as.vector(K['pred'])))
   }else if(verbose == FALSE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metBayesCutoff" = as.vector(metBayesCutoff['pred'])))
+    return(list("score" = returnedScore, "metCutoff" = as.vector(metCutoff['pred'])))
   }else{
-    return(list("score" = returnedScore, "metBayesCutoff" = NA))
+    return(list("score" = returnedScore, "metCutoff" = NA))
   }
 }
 

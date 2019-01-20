@@ -112,3 +112,15 @@ bootLadderBoot(predictions = goodSim,
                reportBootstrapN = 10,
                verbose = T)
 ```
+
+Finally, let's see what happens if they submit a worse prediction after a previous one. 
+```{r}
+bootLadderBoot(predictions = badSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               prevPredictions = goodSim,
+               scoreFun = spearman,
+               bayesThreshold = 3,
+               reportBootstrapN = 10)
+```
