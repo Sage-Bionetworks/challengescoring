@@ -27,7 +27,7 @@ pearson <- function(gold, pred){
 #' @param pred A numeric vector of prediction values (e.g. output from survival::Surv).
 #' @export
 c_statistic <- function(gold, pred){
-  Hmisc::rcorr.cens(gold, pred, outx=TRUE)["C Index"]
+  Hmisc::rcorr.cens(pred,Surv(gold),outx=TRUE)["C Index"]
 }
 
 #' Calculate AUC for a set of binary outcomes and a numeric vector of prediction values.

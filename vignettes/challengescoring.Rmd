@@ -28,16 +28,17 @@ Two major pitfalls in running predictive modeling challenges are the possibility
 
 One approach to prevent this, which can be implemented using this package, is the bootLadderBoot algorithm. A detailed description can be found [here](https://arxiv.org/pdf/1607.00091.pdf), but in brief, this method uses two approaches to prevent overfitting. First, this method reports an average of a small set of bootstrapped scores, rather than actual scores (the boot in bootLadderBoot). Second, this method only reports new scores if the participants have substantially improved over a previous prediction, based on a Bayes factor calculated from a large set of bootstrapped scores (the ladderBoot in bootLadderBoot). 
 
-In this package, the function `bootLadderBoot()` is used to provide this information. 
+In this package, the function `bootLadderBoot()` is used to provide this information.
 
 ##Using `bootLadderBoot()`
 
-Here is a basic example of using the bootLadderBoot function. We've provided some test data for use in these examples. 
+Here is a basic example of using the bootLadderBoot function. We've provided some test data for use in these examples. Please note, for ease of rerunning these examples, we've set the `bootstrapN` parameter to 10. We would recommend a larger number of bootstraps for real-world applications. We typically perform 10000 (the default). 
 
 In this example, we'll pretend that we are running a challenge to develop algorithms that predict a patient's resting heartrate as measured immediately 10 minutes of walking. We have "truth" or test data from 1000 patients (`truth`), where `value` is the heart rate.  
 
 ```{r}
 library(challengescoring)
+library(tidyverse)
 head(truth)
 ```
 The participants have some other training data upon which they are generating predictions, such as age, gender, height, weight, etc. For simplicity, and because this package is just about _scoring_ predictions, we aren't concerned about those data here, so let's just assume the participants have already trained their models and are ready to submit predictions against a test dataset. 
@@ -53,15 +54,14 @@ head(badSim)
 Let's score that prediction using the `bootLadderBoot()` function. `badSim` must have the same ID columns (`patient`) as `truth`. They can have different prediction column names - we'll define those in the function. Since this is their first submission, we don't have to worry about the previous prediction arguments. We'll also register a parallel backend to make the calculations go a bit more quickly. By default, this function runs on a single thread, so if you don't want to run this analysis across multiple threads, you don't have to set anything. 
 
 ```{r}
-doMC::registerDoMC(cores = parallel::detectCores()) #only on UNIX systems
 
 bootLadderBoot(predictions = badSim,
                predictionColname = "prediction",
                goldStandard = truth,
                goldStandardColname = "value",
                scoreFun = spearman,
-               reportBootstrapN = 10,
-               doParallel = T) #how many bootstraps to base the returned score off of
+               bootstrapN = 10,
+               reportBootstrapN = 10) #how many bootstraps to base the returned score off of
 ```
 
 OK - so they have a Spearman correlation of 0.2. They modify their predictions and submit again. 
@@ -83,6 +83,7 @@ bootLadderBoot(predictions = anotherBadSim,
                prevPredictions = badSim,
                scoreFun = spearman,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10,
                doParallel = T)
 ```
@@ -99,6 +100,7 @@ bootLadderBoot(predictions = goodSim,
                prevPredictions = badSim,
                scoreFun = spearman,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10,
                doParallel = T)
 ```
@@ -114,6 +116,7 @@ bootLadderBoot(predictions = badSim,
                prevPredictions = goodSim,
                scoreFun = spearman,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10,
                doParallel = T)
 ```
@@ -146,6 +149,44 @@ bootLadderBoot(predictions = goodSim,
                scoreFun = nrmse_max_min,
                largerIsBetter = F,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10,
                doParallel = T)
 ```
+
+##Pre-processing of prediction data
+
+In some cases, you might need to preprocess your data before running it through bootLadderBoot, because this package requires each prediction or test dataset to be one numeric vector that can be sampled for bootstrapping purposes. 
+
+For example, you might have survival data like this:
+
+```{r}
+library(survival)
+library(Hmisc)
+
+set.seed(1)
+##prediction data
+age <- rnorm(400, 50, 10) 
+
+##truth data
+d.time <- rexp(400)
+cens   <- runif(400,.5,2)
+death  <- d.time <= cens
+d.time <- pmin(d.time, cens)
+        
+```
+Where both the numeric vector `d.time` AND the boolean vector `death` are components of the truth data. In order to deal with this, we can simply coerce these two into a `Surv` object like so, and then write and read it back in to obtain a single :
+```{r}
+library(survival)
+goldStandardMatrix <- Surv(d.time, death) %>% as.matrix()
+predictionsMatrix <- age %>% as.matrix()
+bootstrapMetricMatrix <- bootstrappingMetric(goldStandardMatrix = goldStandardMatrix,
+                                              predictionsMatrix = predictionsMatrix,
+                                               scoreFun = c_statistic,
+                                               bootstrapN = 10,
+                                               seed = seed,
+                                               doParallel = F)
+
+```
+
+And then use the bootLadderBoot function with the `c_statistic` parameter to determine the concordance index (Harrell's C-statistic) of the prediction to this value. 
