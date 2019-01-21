@@ -98,8 +98,8 @@ bootLadderBoot <- function(predictions,
 
   if(!is.null(prevPredictions) & largerIsBetter == TRUE){ #test for previous prediction data and whether larger scores are better
     K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes) #compute bayes factor where a larger score is better
-    metBayesCutoff <- c(K['pred']>bayesThreshold)
-    if(K['pred'] > bayesThreshold & meanBS_new > meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+    metCutoff <- c(K['pred']>bayesThreshold & meanBS_new > meanBS_prev)
+    if(metCutoff){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
 
       if(verbose == TRUE){print("Larger is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
@@ -108,16 +108,26 @@ bootLadderBoot <- function(predictions,
       if(verbose == TRUE){print("Larger is better : previous prediction is better or bayes threshold not met")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return previous bootstrap score
     }
+    if(verbose == TRUE){
+      print(paste0("Bayes factor: ", K['pred']))
+      print(paste0("Bayes cutoff is: ", bayesThreshold))
+      print(paste0("Met cutoff: ", metCutoff))
+    }
   }else if(!is.null(prevPredictions) & largerIsBetter == FALSE){ #compute bayes factor where a smaller score is better
      K <- computeBayesFactor(bootstrapMetricMatrix, 2, invertBayes = invBayes)
-     metBayesCutoff <- c(K['pred']>bayesThreshold)
-    if(K['pred'] > bayesThreshold & meanBS_new < meanBS_prev){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
+     metCutoff <- c(K['pred']>bayesThreshold & meanBS_new < meanBS_prev)
+    if(metCutoff){ ##if bayes score is greater than threshold set by user, AND score is better, report bootstrapped score
       if(verbose == TRUE){print("Smaller is better : current prediction is better")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
     }else{
       if(verbose == TRUE){print("Smaller is better : previous prediction is better or bayes threshold not met")}
       returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,2]) ##if within K threshold, return NA for score
     }
+     if(verbose == TRUE){
+       print(paste0("Bayes factor: ", K['pred']))
+       print(paste0("Bayes cutoff is: ", bayesThreshold))
+       print(paste0("Met cutoff: ", metCutoff))
+     }
   }else if(is.null(prevPredictions)){ ## if there is no previous file, simply return bootstrapped score
     if(verbose == TRUE){print("no previous submission")}
     returnedScore <- mean(bootstrapMetricMatrix[1:reportBootstrapN,1])
@@ -125,11 +135,11 @@ bootLadderBoot <- function(predictions,
 
 
   if(verbose == TRUE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metBayesCutoff" = as.vector(metBayesCutoff), "bayes" = as.vector(K['pred'])))
+    return(list("score" = returnedScore, "metCutoff" = as.vector(metCutoff), "bayes" = as.vector(K['pred'])))
   }else if(verbose == FALSE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metBayesCutoff" = as.vector(metBayesCutoff['pred'])))
+    return(list("score" = returnedScore, "metCutoff" = as.vector(metCutoff['pred'])))
   }else{
-    return(list("score" = returnedScore, "metBayesCutoff" = NA))
+    return(list("score" = returnedScore, "metCutoff" = NA))
   }
 }
 
@@ -141,17 +151,19 @@ bootLadderBoot <- function(predictions,
 #' @param doParallel Bootstrap in parallel. Only works on UNIX based OS. Default FALSE.
 #' @return An MxN matrix of bootstrapped predictions where M is the number of bootstraps performed and N is the number of prediction sets.
 #' @export
-bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun = scoreFun, bootstrapN = bootstrapN, seed = seed, doParallel = F, ...){
+bootstrappingMetric <- function(goldStandardMatrix,
+                                predictionsMatrix,
+                                scoreFun = scoreFun,
+                                bootstrapN = bootstrapN,
+                                seed = seed,
+                                doParallel = F, ...){
 
    # matrix, columns are boostraps, rows are samples
   bsIndexMatrix <- matrix(1:nrow(goldStandardMatrix), nrow(goldStandardMatrix), bootstrapN)
   bsIndexMatrix <- t(aaply(bsIndexMatrix, 2, sample, replace = T))# create bootstrap indices
 
-  numCores <- parallel::detectCores()-1
-  if(numCores == 0){numCores <- 1} ## to avoid error on single core machines
+  if(foreach::getDoParWorkers()==1 & doParallel){stop("doParallel set to TRUE, but no parallel backend is registered. See doMC or doParallel packages, or set doParallel = FALSE.")}
 
-  doMC::registerDoMC(cores = numCores)
-  gc()
   bsMetric  <- alply(.data = bsIndexMatrix, ##score bootstrapped indices
                       .margins = 2,
                       .fun = indexedScore,
@@ -176,7 +188,9 @@ bootstrappingMetric <- function(goldStandardMatrix, predictionsMatrix, scoreFun 
 #' if(largerIsBetter == F & currentPred>refPred){invertBayes = F}
 #' @return A matrix of Bayes factors.
 #' @export
-computeBayesFactor <- function(bootstrapMetricMatrix, refPredIndex, invertBayes){
+computeBayesFactor <- function(bootstrapMetricMatrix,
+                               refPredIndex,
+                               invertBayes){
 
     M <- as.data.frame(bootstrapMetricMatrix - bootstrapMetricMatrix[,refPredIndex])
     K <- apply(M ,2, function(x) {
@@ -191,7 +205,11 @@ computeBayesFactor <- function(bootstrapMetricMatrix, refPredIndex, invertBayes)
 #wrapper function to pass bootstrapped data to scoring function provided by user
 #this allows user to provide a simple scoring function of the form function(gold, pred)
 #where gold and pred are vectors with the gold standard data and the prediction data
-indexedScore <- function(dataIndices, goldStandardMatrix, predictionsMatrix, scoreFun){
+indexedScore <- function(dataIndices,
+                         goldStandardMatrix,
+                         predictionsMatrix,
+                         scoreFun){
+
   gold <- goldStandardMatrix[dataIndices,]
   if(ncol(predictionsMatrix)>1){
     plyr::aaply(predictionsMatrix[dataIndices,], 2, scoreFun, gold = gold)

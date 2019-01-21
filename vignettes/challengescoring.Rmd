@@ -1,0 +1,126 @@
+---
+title: "challengescoring: functions for supporting computational prediction challenges."
+author: "Robert Allaway"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{challengescoring: functions for supporting computational prediction challenges.}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+Challenges, such as those promoted by the DREAM community, are a popular mechanism to compare the performance of computational algorithms in predicting the values of a hidden test dataset. 
+
+The goal of this package is to provide the statistical infrastructure for conducting these challenges. Specifically, this package helps challenge organizers calculate scores for participant predictions, using the bootLadderBoot approach to prevent model overfitting. 
+
+##bootLadderBoot algorithm
+
+Two major pitfalls in running computational challenges are the possibility of overfitting of models to a test set or test set data leakage. This is particularly applicable to challenges with small test datasets. A consequence of these pitfalls is the creation of models that are not generalizable, i.e. they cannot be meaningfully applied to the same prediction problems on different test datasets, reducing their real-world applicability. 
+
+One approach to prevent this, which can be implemented using this package, is the bootLadderBoot algorithm. A detailed description can be found [here](https://arxiv.org/pdf/1607.00091.pdf), but in brief, this method uses two approaches to prevent overfitting. First, this method reports an average of a small set of bootstrapped scores, rather than actual scores (the boot in bootLadderBoot). Second, this method only reports new scores if the participants have substantially improved over a previous prediction, based on a Bayes factor calculated from a large set of bootstrapped scores (the ladderBoot in bootLadderBoot). 
+
+In this package, the function `bootLadderBoot()` is used to provide this information. 
+
+##Using `bootLadderBoot()`
+
+Here is a basic example of using the bootLadderBoot function. We've provided some test data for use in these examples. 
+
+In this example, we'll pretend that we are running a challenge to develop algorithms that predict a patient's resting heartrate as measured immediately 10 minutes of walking. We have "truth" or test data from 1000 patients (`truth`), where `value` is the heart rate.  
+
+```{r}
+library(challengescoring)
+head(truth)
+```
+The participants have some other training data upon which they are generating predictions, such as age, gender, height, weight, etc. For simplicity, and because this package is just about _scoring_ predictions, we aren't concerned about those data here. We've decided that we care most about how well the participants in this challenge are predicting the test set values in terms of *Spearman* correlation.
+
+We've opened our challenge to our one participant who has submitted their first prediction, `badSim`, which isn't that great of a prediction. 
+
+```{r}
+head(badSim)
+```
+
+Let's go ahead and score that prediction using the `bootLadderBoot()` function. `badSim` must have the same ID columns (`patient`) as `truth`. They can have different prediction column names - we'll define those in the function. Since this is their first submission, we don't have to worry about the previous prediction arguments. We'll also register a parallel backend to make the calculations go a bit more quickly. By default, this function runs on a single thread, so if you don't want to run this analysis across multiple threads, you don't have to set anything. 
+
+```{r}
+doMC::registerDoMC(cores = parallel::detectCores()) #only on UNIX systems
+
+bootLadderBoot(predictions = badSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               scoreFun = spearman,
+               reportBootstrapN = 10,
+               doParallel = T) #how many bootstraps to base the returned score off of
+```
+
+OK - so they have a Spearman correlation of 0.2. They modify their predictions and submit again. 
+
+```{r}
+anotherBadSim <- badSim
+anotherBadSim$prediction <- badSim$prediction+1
+```
+
+And we score it. This time, however, they have a previous "best" score, so that will become our reference for determining whether to return a new score or not (see the bootLadderBoot algorithm section for a brief explanation of why we do this).
+
+We set `prevPredictions` as badSim, their first submission, and `predictions` as anotherBadSim, their second submission. We want our threshold for "improvement" to be a Bayes factor of 3 or more between the two predictions, so we set `bayesThreshold = 3`.
+
+```{r}
+bootLadderBoot(predictions = anotherBadSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               prevPredictions = badSim,
+               scoreFun = spearman,
+               bayesThreshold = 3,
+               reportBootstrapN = 10)
+```
+
+This prediction was about as poor as the first, and within a bayesThreshold of 3, so the function returns FALSE for metBayesCutoff, and they will recieve a bootstrapped score based on their previous submission. 
+
+On the third try, however, they submit a much better prediction (`goodSim`)! 
+
+```{r}
+bootLadderBoot(predictions = goodSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               prevPredictions = badSim,
+               scoreFun = spearman,
+               bayesThreshold = 3,
+               reportBootstrapN = 10)
+```
+
+This submission met the Bayes threshold, so a new score was reported. This prediction file now becomes the reference file for "best" prediction. If you'd like to see what the Bayes factor actually was, you can run the function with the option `verbose=T`. This will provide progress information as well.
+
+```{r}
+bootLadderBoot(predictions = goodSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               prevPredictions = badSim,
+               scoreFun = spearman,
+               bayesThreshold = 3,
+               reportBootstrapN = 10,
+               verbose = T)
+```
+
+Finally, let's see what happens if they submit a worse prediction after a previous one. 
+```{r}
+bootLadderBoot(predictions = badSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               prevPredictions = goodSim,
+               scoreFun = spearman,
+               bayesThreshold = 3,
+               reportBootstrapN = 10)
+```
