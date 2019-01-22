@@ -11,4 +11,10 @@ This package provides an implementation of the BootLadderBoot approach to scorin
 \author{
 \strong{Maintainer}: Robert Allaway \email{robert.allaway@sagebionetworks.org}
 
+Other contributors:
+\itemize{
+  \item Andrew Lamb \email{andrew.lamb@sagebionetworks.org} [contributor]
+  \item Michael Mason \email{michael.mason@sagebionetworks.org} [contributor]
+}
+
 }

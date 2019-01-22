@@ -51,7 +51,7 @@ We've opened our challenge to our one participant who has submitted their first 
 head(badSim)
 ```
 
-Let's score that prediction using the `bootLadderBoot()` function. `badSim` must have the same ID columns (`patient`) as `truth`. They can have different prediction column names - we'll define those in the function. Since this is their first submission, we don't have to worry about the previous prediction arguments. We'll also register a parallel backend to make the calculations go a bit more quickly. By default, this function runs on a single thread, so if you don't want to run this analysis across multiple threads, you don't have to set anything. 
+Let's score that prediction using the `bootLadderBoot()` function. `badSim` must have the same ID columns (`patient`) as `truth`. They can have different prediction column names - we'll define those in the function. Since this is their first submission, we don't have to worry about the previous prediction arguments. (to make this f 
 
 ```{r}
 
@@ -84,8 +84,7 @@ bootLadderBoot(predictions = anotherBadSim,
                scoreFun = spearman,
                bayesThreshold = 3,
                bootstrapN = 10,
-               reportBootstrapN = 10,
-               doParallel = T)
+               reportBootstrapN = 10)
 ```
 
 This prediction was about as poor as the first, and within a bayesThreshold of 3, so the function returns FALSE for metBayesCutoff, and they will recieve a bootstrapped score based on their previous submission. 
@@ -101,8 +100,7 @@ bootLadderBoot(predictions = goodSim,
                scoreFun = spearman,
                bayesThreshold = 3,
                bootstrapN = 10,
-               reportBootstrapN = 10,
-               doParallel = T)
+               reportBootstrapN = 10)
 ```
 
 This submission met the Bayes threshold, so a new score was reported. This prediction file now becomes the reference file for "best" prediction. If you'd like to see what the Bayes factor actually was, you can run the function with the option `verbose=T`. This will provide progress information as well. 
@@ -117,8 +115,7 @@ bootLadderBoot(predictions = badSim,
                scoreFun = spearman,
                bayesThreshold = 3,
                bootstrapN = 10,
-               reportBootstrapN = 10,
-               doParallel = T)
+               reportBootstrapN = 10)
 ```
 
 They no longer meet the cutoff, and a bootstrapped score of the previous best (`prevPredictions`) is reported instead. 
@@ -150,8 +147,7 @@ bootLadderBoot(predictions = goodSim,
                largerIsBetter = F,
                bayesThreshold = 3,
                bootstrapN = 10,
-               reportBootstrapN = 10,
-               doParallel = T)
+               reportBootstrapN = 10)
 ```
 
 ##Pre-processing of prediction data
@@ -184,8 +180,7 @@ bootstrapMetricMatrix <- bootstrappingMetric(goldStandardMatrix = goldStandardMa
                                               predictionsMatrix = predictionsMatrix,
                                                scoreFun = c_statistic,
                                                bootstrapN = 10,
-                                               seed = seed,
-                                               doParallel = F)
+                                               seed = seed)
 
 ```
 
