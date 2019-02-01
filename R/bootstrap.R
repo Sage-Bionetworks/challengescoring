@@ -134,12 +134,10 @@ bootLadderBoot <- function(predictions,
   }
 
 
-  if(verbose == TRUE & !is.null(prevPredictions)){
+  if(!is.null(prevPredictions)){
     return(list("score" = returnedScore, "metCutoff" = as.vector(metCutoff), "bayes" = as.vector(K['pred'])))
-  }else if(verbose == FALSE & !is.null(prevPredictions)){
-    return(list("score" = returnedScore, "metCutoff" = as.vector(metCutoff['pred'])))
   }else{
-    return(list("score" = returnedScore, "metCutoff" = NA))
+    return(list("score" = returnedScore, "metCutoff" = NA, "bayes" = NA))
   }
 }
 

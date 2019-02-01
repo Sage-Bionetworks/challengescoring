@@ -150,9 +150,9 @@ bootLadderBoot(predictions = goodSim,
                reportBootstrapN = 10)
 ```
 
-##Pre-processing of prediction data
+##Analysis of survival data
 
-In some cases, you might need to preprocess your data before running it through bootLadderBoot, because this package requires each prediction or test dataset to be one numeric vector that can be sampled for bootstrapping purposes. 
+To analyze survival predictions, you may need to preprocess your data before running it through bootLadderBoot because this package requires each prediction to be one numeric vector that can be sampled for bootstrapping purposes. 
 
 For example, you might have survival data like this:
 
@@ -162,7 +162,8 @@ library(Hmisc)
 
 set.seed(1)
 ##prediction data
-age <- rnorm(400, 50, 10) 
+age_previous <- rnorm(400, 50, 10) 
+age_new <- rnorm(400, 50, 10) 
 
 ##truth data
 d.time <- rexp(400)
@@ -171,16 +172,22 @@ death  <- d.time <= cens
 d.time <- pmin(d.time, cens)
         
 ```
-Where both the numeric vector `d.time` AND the boolean vector `death` are components of the truth data. In order to deal with this, we can simply coerce these two into a `Surv` object like so, and then write and read it back in to obtain a single :
+
+Where both the numeric vector `d.time` AND the boolean vector `death` are components of the truth data. The prediction data `age_previous` and `age_new` are simply a numeric vectors of ages. 
+
 ```{r}
 library(survival)
-goldStandardMatrix <- Surv(d.time, death) %>% as.matrix()
-predictionsMatrix <- age %>% as.matrix()
-bootstrapMetricMatrix <- bootstrappingMetric(goldStandardMatrix = goldStandardMatrix,
-                                              predictionsMatrix = predictionsMatrix,
-                                               scoreFun = c_statistic,
-                                               bootstrapN = 10,
-                                               seed = seed)
+goldStandard <- Surv(d.time, death) %>% as.character() %>% as.data.frame() %>% magrittr::set_colnames(c("gold"))
+predictions <- age_new %>% as.data.frame() %>% magrittr::set_colnames(c("pred"))
+prevPredictions <- age_previous %>% as.data.frame() %>% magrittr::set_colnames(c("pred"))
+
+bootLadderBoot(predictions = predictions,
+               predictionColname = "pred", 
+               prevPredictions = prevPredictions,
+               goldStandard = goldStandard,
+               goldStandardColname = "gold",
+               scoreFun = c_statistic,
+               verbose = T)
 
 ```
 
