@@ -24,23 +24,26 @@ The goal of this package is to provide the statistical infrastructure for conduc
 
 ##bootLadderBoot algorithm
 
-Two major pitfalls in running computational challenges are the possibility of overfitting of models to a test set or test set data leakage. This is particularly applicable to challenges with small test datasets. A consequence of these pitfalls is the creation of models that are not generalizable, i.e. they cannot be meaningfully applied to the same prediction problems on different test datasets, reducing their real-world applicability. 
+Two major pitfalls in running predictive modeling challenges are the possibility of overfitting of models to a test set or test set data leakage. This is particularly applicable to challenges with small test datasets. A consequence of these pitfalls is the creation of models that are not generalizable, i.e. they cannot be meaningfully applied to the same prediction problems on different test datasets, reducing their real-world applicability. 
 
 One approach to prevent this, which can be implemented using this package, is the bootLadderBoot algorithm. A detailed description can be found [here](https://arxiv.org/pdf/1607.00091.pdf), but in brief, this method uses two approaches to prevent overfitting. First, this method reports an average of a small set of bootstrapped scores, rather than actual scores (the boot in bootLadderBoot). Second, this method only reports new scores if the participants have substantially improved over a previous prediction, based on a Bayes factor calculated from a large set of bootstrapped scores (the ladderBoot in bootLadderBoot). 
 
-In this package, the function `bootLadderBoot()` is used to provide this information. 
+In this package, the function `bootLadderBoot()` is used to provide this information.
 
 ##Using `bootLadderBoot()`
 
-Here is a basic example of using the bootLadderBoot function. We've provided some test data for use in these examples. 
+Here is a basic example of using the bootLadderBoot function. We've provided some test data for use in these examples. Please note, for ease of rerunning these examples, we've set the `bootstrapN` parameter to 10. We would recommend a larger number of bootstraps for real-world applications. We typically perform 10000 (the default). 
 
 In this example, we'll pretend that we are running a challenge to develop algorithms that predict a patient's resting heartrate as measured immediately 10 minutes of walking. We have "truth" or test data from 1000 patients (`truth`), where `value` is the heart rate.  
 
 ```{r}
 library(challengescoring)
+library(tidyverse)
 head(truth)
 ```
-The participants have some other training data upon which they are generating predictions, such as age, gender, height, weight, etc. For simplicity, and because this package is just about _scoring_ predictions, we aren't concerned about those data here. We've decided that we care most about how well the participants in this challenge are predicting the test set values in terms of *Spearman* correlation.
+The participants have some other training data upon which they are generating predictions, such as age, gender, height, weight, etc. For simplicity, and because this package is just about _scoring_ predictions, we aren't concerned about those data here, so let's just assume the participants have already trained their models and are ready to submit predictions against a test dataset. 
+
+For this example, the best performing predictions will be determined using the *Spearman* correlation of predicted values to the test dataset.
 
 We've opened our challenge to our one participant who has submitted their first prediction, `badSim`, which isn't that great of a prediction. 
 
@@ -48,18 +51,17 @@ We've opened our challenge to our one participant who has submitted their first 
 head(badSim)
 ```
 
-Let's go ahead and score that prediction using the `bootLadderBoot()` function. `badSim` must have the same ID columns (`patient`) as `truth`. They can have different prediction column names - we'll define those in the function. Since this is their first submission, we don't have to worry about the previous prediction arguments. We'll also register a parallel backend to make the calculations go a bit more quickly. By default, this function runs on a single thread, so if you don't want to run this analysis across multiple threads, you don't have to set anything. 
+Let's score that prediction using the `bootLadderBoot()` function. `badSim` must have the same ID columns (`patient`) as `truth`. They can have different prediction column names - we'll define those in the function. Since this is their first submission, we don't have to worry about the previous prediction arguments. (to make this f 
 
 ```{r}
-doMC::registerDoMC(cores = parallel::detectCores()) #only on UNIX systems
 
 bootLadderBoot(predictions = badSim,
                predictionColname = "prediction",
                goldStandard = truth,
                goldStandardColname = "value",
                scoreFun = spearman,
-               reportBootstrapN = 10,
-               doParallel = T) #how many bootstraps to base the returned score off of
+               bootstrapN = 10,
+               reportBootstrapN = 10) #how many bootstraps to base the returned score off of
 ```
 
 OK - so they have a Spearman correlation of 0.2. They modify their predictions and submit again. 
@@ -81,6 +83,7 @@ bootLadderBoot(predictions = anotherBadSim,
                prevPredictions = badSim,
                scoreFun = spearman,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10)
 ```
 
@@ -96,22 +99,11 @@ bootLadderBoot(predictions = goodSim,
                prevPredictions = badSim,
                scoreFun = spearman,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10)
 ```
 
-This submission met the Bayes threshold, so a new score was reported. This prediction file now becomes the reference file for "best" prediction. If you'd like to see what the Bayes factor actually was, you can run the function with the option `verbose=T`. This will provide progress information as well.
-
-```{r}
-bootLadderBoot(predictions = goodSim,
-               predictionColname = "prediction",
-               goldStandard = truth,
-               goldStandardColname = "value",
-               prevPredictions = badSim,
-               scoreFun = spearman,
-               bayesThreshold = 3,
-               reportBootstrapN = 10,
-               verbose = T)
-```
+This submission met the Bayes threshold, so a new score was reported. This prediction file now becomes the reference file for "best" prediction. If you'd like to see what the Bayes factor actually was, you can run the function with the option `verbose=T`. This will provide progress information as well. 
 
 Finally, let's see what happens if they submit a worse prediction after a previous one. 
 ```{r}
@@ -122,5 +114,81 @@ bootLadderBoot(predictions = badSim,
                prevPredictions = goodSim,
                scoreFun = spearman,
                bayesThreshold = 3,
+               bootstrapN = 10,
                reportBootstrapN = 10)
 ```
+
+They no longer meet the cutoff, and a bootstrapped score of the previous best (`prevPredictions`) is reported instead. 
+
+##Using other scoring functions
+
+`challengescoring` ships with several scoring functions (for use in the `scoreFun` parameter of `bootLadderBoot`). However, you can also use any custom function of the form `mymetric <- function(gold, pred)` where `gold` is a numeric vector of gold standard values, and `pred` is a numeric vector of prediction values for one submission. 
+
+Let's define one now for normalized root mean squared error (NRMSE), where the error is normalized by the range of the gold standard data (max-min). 
+
+```{r}
+nrmse_max_min <- function(gold, pred){
+    rmse <- sqrt(mean((gold - pred) ** 2))
+    rmse_std <- rmse/(max(gold)-min(gold))
+}
+```
+
+Once `nrmse_max_min` is define, we can simply plug it into `bootLadderBoot` (note, unlike the previous example, lower NRMSE is better, so `largerIsBetter = F`). 
+
+```{r}
+library(challengescoring)
+
+bootLadderBoot(predictions = goodSim,
+               predictionColname = "prediction",
+               goldStandard = truth,
+               goldStandardColname = "value",
+               prevPredictions = badSim,
+               scoreFun = nrmse_max_min,
+               largerIsBetter = F,
+               bayesThreshold = 3,
+               bootstrapN = 10,
+               reportBootstrapN = 10)
+```
+
+##Analysis of survival data
+
+To analyze survival predictions, you may need to preprocess your data before running it through bootLadderBoot because this package requires each prediction to be one numeric vector that can be sampled for bootstrapping purposes. 
+
+For example, you might have survival data like this:
+
+```{r}
+library(survival)
+library(Hmisc)
+
+set.seed(1)
+##prediction data
+age_previous <- rnorm(400, 50, 10) 
+age_new <- rnorm(400, 50, 10) 
+
+##truth data
+d.time <- rexp(400)
+cens   <- runif(400,.5,2)
+death  <- d.time <= cens
+d.time <- pmin(d.time, cens)
+        
+```
+
+Where both the numeric vector `d.time` AND the boolean vector `death` are components of the truth data. The prediction data `age_previous` and `age_new` are simply a numeric vectors of ages. 
+
+```{r}
+library(survival)
+goldStandard <- Surv(d.time, death) %>% as.character() %>% as.data.frame() %>% magrittr::set_colnames(c("gold"))
+predictions <- age_new %>% as.data.frame() %>% magrittr::set_colnames(c("pred"))
+prevPredictions <- age_previous %>% as.data.frame() %>% magrittr::set_colnames(c("pred"))
+
+bootLadderBoot(predictions = predictions,
+               predictionColname = "pred", 
+               prevPredictions = prevPredictions,
+               goldStandard = goldStandard,
+               goldStandardColname = "gold",
+               scoreFun = c_statistic,
+               verbose = T)
+
+```
+
+And then use the bootLadderBoot function with the `c_statistic` parameter to determine the concordance index (Harrell's C-statistic) of the prediction to this value. 
