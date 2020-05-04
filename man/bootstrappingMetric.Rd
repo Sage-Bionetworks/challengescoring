@@ -4,9 +4,15 @@
 \alias{bootstrappingMetric}
 \title{Create an matrix of bootstrapped predictions.}
 \usage{
-bootstrappingMetric(goldStandardMatrix, predictionsMatrix,
-  scoreFun = scoreFun, bootstrapN = bootstrapN, seed = seed,
-  doParallel = F, ...)
+bootstrappingMetric(
+  goldStandardMatrix,
+  predictionsMatrix,
+  scoreFun = scoreFun,
+  bootstrapN = bootstrapN,
+  seed = seed,
+  doParallel = F,
+  ...
+)
 }
 \arguments{
 \item{goldStandardMatrix}{A single column matrix with the gold standard predictions.}
