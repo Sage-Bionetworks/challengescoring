@@ -14,7 +14,7 @@ Encoding: UTF-8
 LazyData: true
 Imports: plyr, dplyr, magrittr, purrr, foreach, doMC
 Suggests: 
-    testthat,
+    testthat (>= 2.1.0),
     knitr,
     rmarkdown,
     pROC,
