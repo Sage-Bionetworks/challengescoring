@@ -4,11 +4,21 @@
 \alias{bootLadderBoot}
 \title{Calculate a bootstrapped score for an initial submission or subsequent submission.}
 \usage{
-bootLadderBoot(predictions, predictionColname, goldStandard,
-  goldStandardColname, prevPredictions = NULL, scoreFun = spearman,
-  bootstrapN = 10000, reportBootstrapN = 10, bayesThreshold = 3,
-  seed = 98121, largerIsBetter = TRUE, verbose = FALSE,
-  doParallel = FALSE)
+bootLadderBoot(
+  predictions,
+  predictionColname,
+  goldStandard,
+  goldStandardColname,
+  prevPredictions = NULL,
+  scoreFun = spearman,
+  bootstrapN = 10000,
+  reportBootstrapN = 10,
+  bayesThreshold = 3,
+  seed = 98121,
+  largerIsBetter = TRUE,
+  verbose = FALSE,
+  doParallel = FALSE
+)
 }
 \arguments{
 \item{predictions}{The relative path to the current prediction csv, or a data frame.}

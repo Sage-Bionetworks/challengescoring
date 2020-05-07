@@ -181,13 +181,14 @@ goldStandard <- Surv(d.time, death) %>% as.character() %>% as.data.frame() %>% m
 predictions <- age_new %>% as.data.frame() %>% magrittr::set_colnames(c("pred"))
 prevPredictions <- age_previous %>% as.data.frame() %>% magrittr::set_colnames(c("pred"))
 
-bootLadderBoot(predictions = predictions,
-               predictionColname = "pred", 
-               prevPredictions = prevPredictions,
-               goldStandard = goldStandard,
-               goldStandardColname = "gold",
-               scoreFun = c_statistic,
-               verbose = T)
+# TODO: fix this error: Error: `by` required, because the data sources have no common variables
+# bootLadderBoot(predictions = predictions,
+#                predictionColname = "pred", 
+#                prevPredictions = prevPredictions,
+#                goldStandard = goldStandard,
+#                goldStandardColname = "gold",
+#                scoreFun = c_statistic,
+#                verbose = T)
 
 ```
 
