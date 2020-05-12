@@ -30,6 +30,32 @@ test_that("validate_required_columns", {
     )
 })
 
+test_that("combine_validation_prediction_dfs", {
+  val_df1  <- tibble::tribble(~prediction_name, ~validation)
+  pred_df1 <- tibble::tribble(~prediction_name, ~prediction)
+  val_df2  <- tibble::tribble(~name_col1, ~name_col2, ~name_col3, ~validation)
+  pred_df2 <- tibble::tribble(~name_col1, ~name_col2, ~name_col4, ~prediction)
+  expect_equal(
+    combine_validation_prediction_dfs(val_df1, pred_df1),
+    tibble::tribble(~prediction_name, ~validation, ~prediction)
+  )
+  expect_equal(
+    combine_validation_prediction_dfs(val_df2, pred_df2, name_columns = c("name_col1", "name_col2")),
+    tibble::tribble(~name_col1, ~name_col2, ~validation, ~prediction)
+  )
+  expect_equal(
+    combine_validation_prediction_dfs(val_df2, pred_df2, name_columns = c("name_col1", "name_col3")),
+    NULL
+  )
+  # df2 <- tibble::tribble(~sample_id, ~dataset_name)
+  # df3 <- tibble::tribble(~dataset_name)
+  # df4 <- tibble::tribble(~dataset.name, ~sample.id)
+  # df5 <- tibble::tribble(~dataset_name, ~sample_id, ~sample_id)
+  # df6 <- tibble::tribble(~dataset.name, ~sample_id, ~sample_id)
+  #
+  # expect_null(validate_required_columns(df1, correct_columns))
+})
+
 
 test_that("create_missing_column_names_message", {
   expect_equal(
