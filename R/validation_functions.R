@@ -25,7 +25,7 @@ validate_submission <- function(
   )
   combined_result <- validate_combined_df(combined_df)
   if (!is.null(combined_result)) return(combined_result)
-  else return(combined_df)
+  return(combined_df)
 }
 
 
