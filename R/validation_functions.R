@@ -17,11 +17,9 @@ validate_submission <- function(
 ){
   column_result <- validate_required_columns(prediction_df, c(name_columns, pred_column))
   if (!is.null(column_result)) return(column_result)
-  combine_result <- try(combine_validation_prediction_dfs(
+  combined_df <- combine_validation_prediction_dfs(
     prediction_df, validation_df, name_columns, pred_column, val_column
-  ))
-  if (inherits(combine_result, "try-error")) return(combine_result)
-  else combined_df <- combine_result
+  )
   combined_result <- validate_combined_df(combined_df)
   if (!is.null(combined_result)) return(combined_df)
   else return(combined_result)
@@ -86,28 +84,18 @@ combine_validation_prediction_dfs <- function(
   )
 }
 
-
 validate_combined_df <- function(df, name_columns  = "prediction_name"){
   error_messages <- c()
 
-  duplicated_rows <- df %>%
-    tidyr::unite("prediction_name", name_columns, sep = ";") %>%
-    dplyr::group_by(.data$prediction_name) %>%
-    dplyr::summarise(count = dplyr::n()) %>%
-    dplyr::filter(.data$count > 1) %>%
-    dplyr::pull("prediction_name")
+  duplicate_rows <- get_duplicate_rows_by_name_columns(df, name_columns)
+  missing_rows <- get_missing_rows_by_name_columns(df, name_columns)
 
-  missing_rows <- df %>%
-    tidyr::unite("prediction_name", name_columns, sep = ";") %>%
-    dplyr::filter(is.na(.data$prediction) | is.nan(.data$prediction))
-    dplyr::pull("prediction_name")
-
-  if (length(duplicated_columns) != 0) {
-    error_messages <- create_duplicate_column_names_message(duplicated_columns)
+  if (length(duplicate_rows) != 0) {
+    error_messages <- create_duplicate_column_names_message(duplicate_rows)
   }
-  if (length(missing_columns) != 0) {
+  if (length(missing_rows) != 0) {
     error_messages <- c(
-      error_messages, create_missing_column_names_message(missing_columns)
+      error_messages, create_missing_column_names_message(missing_rows)
     )
   }
 
@@ -122,6 +110,27 @@ validate_combined_df <- function(df, name_columns  = "prediction_name"){
 }
 
 # helpers ---------------------------------------------------------------------
+
+get_duplicate_rows_by_name_columns <- function(
+  df, name_columns  = "prediction_name"
+){
+  df %>%
+    tidyr::unite("prediction_name", name_columns, sep = ";") %>%
+    dplyr::group_by(.data$prediction_name) %>%
+    dplyr::summarise(count = dplyr::n()) %>%
+    dplyr::filter(.data$count > 1) %>%
+    dplyr::pull("prediction_name")
+}
+
+get_missing_rows_by_name_columns <- function(
+  df, name_columns  = "prediction_name"
+){
+  df %>%
+    tidyr::unite("prediction_name", name_columns, sep = ";") %>%
+    dplyr::filter(is.na(.data$prediction) | is.nan(.data$prediction)) %>%
+    dplyr::pull("prediction_name")
+}
+
 get_duplicate_column_names <- function(df){
   df %>%
     colnames %>%
@@ -144,6 +153,20 @@ create_missing_column_names_message <- function(missing_columns){
   stringr::str_c(
     "Prediction file is missing columns: ",
     values_to_list_string(missing_columns)
+  )
+}
+
+create_duplicate_rows_message <- function(duplicate_rows){
+  stringr::str_c(
+    "Prediction file has duplicate predictions for: ",
+    values_to_list_string(duplicate_rows)
+  )
+}
+
+create_missing_rows_message <- function(missing_rows){
+  stringr::str_c(
+    "Prediction file is missing predictions: ",
+    values_to_list_string(missing_rows)
   )
 }
 

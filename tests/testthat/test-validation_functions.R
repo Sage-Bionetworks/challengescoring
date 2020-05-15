@@ -40,28 +40,45 @@ test_that("combine_validation_prediction_dfs", {
     tibble::tribble(~prediction_name, ~validation, ~prediction)
   )
   expect_equal(
-    combine_validation_prediction_dfs(val_df2, pred_df2, name_columns = c("name_col1", "name_col2")),
+    combine_validation_prediction_dfs(
+      val_df2, pred_df2, name_columns = c("name_col1", "name_col2")
+    ),
     tibble::tribble(~name_col1, ~name_col2, ~validation, ~prediction)
   )
-  expect_equal(
-    combine_validation_prediction_dfs(val_df2, pred_df2, name_columns = c("name_col1", "name_col3")),
-    NULL
-  )
-  # df2 <- tibble::tribble(~sample_id, ~dataset_name)
-  # df3 <- tibble::tribble(~dataset_name)
-  # df4 <- tibble::tribble(~dataset.name, ~sample.id)
-  # df5 <- tibble::tribble(~dataset_name, ~sample_id, ~sample_id)
-  # df6 <- tibble::tribble(~dataset.name, ~sample_id, ~sample_id)
-  #
-  # expect_null(validate_required_columns(df1, correct_columns))
 })
 
+test_that("create_duplicate_column_names_message", {
+  expect_equal(
+    create_duplicate_column_names_message("col1"),
+    stringr::str_c(
+      "Prediction file has duplicate columns: [col1]"
+    )
+  )
+})
 
 test_that("create_missing_column_names_message", {
   expect_equal(
-    create_missing_column_names_message("col3"),
+    create_missing_column_names_message("col1"),
     stringr::str_c(
-      "Prediction file is missing columns: [col3]"
+      "Prediction file is missing columns: [col1]"
+    )
+  )
+})
+
+test_that("create_duplicate_rows_message", {
+  expect_equal(
+    create_duplicate_rows_message("prediction1"),
+    stringr::str_c(
+      "Prediction file has duplicate predictions for: [prediction1]"
+    )
+  )
+})
+
+test_that("create_missing_rows_message", {
+  expect_equal(
+    create_missing_rows_message("prediction1"),
+    stringr::str_c(
+      "Prediction file is missing predictions: [prediction1]"
     )
   )
 })
