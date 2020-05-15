@@ -1,3 +1,44 @@
+test_that("validate_submission", {
+  val_df1 <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    validation = c(1, 0)
+  )
+  pred_df1 <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    prediction = c(1, 0)
+  )
+  pred_df2 <- tibble::tibble(
+    prediction_name = c("p1", "p1"),
+    prediction = c(1, 0)
+  )
+  pred_df3 <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    prediction = c(1, NA)
+  )
+  pred_df4 <- tibble::tibble(
+    prediction = c(1, NA)
+  )
+  expect_equal(
+    validate_submission(val_df1, pred_df1),
+    combine_validation_prediction_dfs(val_df1, pred_df1)
+  )
+  expect_equal(
+    validate_submission(val_df1, pred_df2),
+    paste0(
+      "Prediction file has duplicate predictions for: [p1], ",
+      "Prediction file is missing predictions: [p2]."
+    )
+  )
+  expect_equal(
+    validate_submission(val_df1, pred_df3),
+    "Prediction file is missing predictions: [p2]."
+  )
+  expect_equal(
+    validate_submission(val_df1, pred_df4),
+    "Prediction file is missing columns: [prediction_name]."
+  )
+})
+
 test_that("validate_required_columns", {
     correct_columns <- c("dataset_name", "sample_id")
     df1 <- tibble::tribble(~dataset_name, ~sample_id)
@@ -45,6 +86,73 @@ test_that("combine_validation_prediction_dfs", {
     ),
     tibble::tribble(~name_col1, ~name_col2, ~validation, ~prediction)
   )
+})
+
+test_that("validate_combined_df", {
+  df1 <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    validation = c(1, 0),
+    prediction = c(1, 0)
+  )
+  df2 <- tibble::tibble(
+    prediction_name = c("p1", "p1"),
+    validation = c(1, 0),
+    prediction = c(1, 0)
+  )
+  df3 <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    validation = c(1, 0),
+    prediction = c(1, NA)
+  )
+  expect_equal(
+    validate_combined_df(df1),
+    NULL
+  )
+  expect_equal(
+    validate_combined_df(df2),
+    "Prediction file has duplicate predictions for: [p1]."
+  )
+  expect_equal(
+    validate_combined_df(df3),
+    "Prediction file is missing predictions: [p2]."
+  )
+})
+
+test_that("combine_error_messages", {
+  expect_equal(combine_error_messages("error1"), "error1.")
+  expect_equal(combine_error_messages(c("error1", "error2")), "error1, error2.")
+})
+
+test_that("get_duplicate_rows_by_name_columns", {
+  df1 <- tibble::tibble(prediction_name = c("p1", "p2"))
+  df2 <- tibble::tibble(prediction_name = c("p1", "p2", "p2"))
+
+  expect_equal(get_duplicate_rows_by_name_columns(df1), character())
+  expect_equal(get_duplicate_rows_by_name_columns(df2), "p2")
+})
+
+test_that("get_duplicate_rows_by_name_columns", {
+  df1 <- tibble::tibble(prediction_name = c("p1", "p2"))
+  df2 <- tibble::tibble(prediction_name = c("p1", "p2", "p2"))
+
+  expect_equal(get_duplicate_rows_by_name_columns(df1), character())
+  expect_equal(get_duplicate_rows_by_name_columns(df2), "p2")
+})
+
+test_that("get_missing_rows_by_name_columns", {
+  df1 <- tibble::tibble(prediction_name = "p1", prediction = 1)
+  df2 <- tibble::tibble(prediction_name = c("p1", "p2"), prediction = c(1, NA))
+
+  expect_equal(get_missing_rows_by_name_columns(df1), character())
+  expect_equal(get_missing_rows_by_name_columns(df2), "p2")
+})
+
+test_that("get_duplicate_column_names", {
+  df1 <- tibble::tribble(~dataset_name)
+  df2 <- tibble::tribble(~dataset_name, ~dataset_name)
+
+  expect_equal(get_duplicate_column_names(df1), character())
+  expect_equal(get_duplicate_column_names(df2), c("dataset_name"))
 })
 
 test_that("create_duplicate_column_names_message", {

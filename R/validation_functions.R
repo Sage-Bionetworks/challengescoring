@@ -8,6 +8,7 @@
 #' prediction values
 #' @param val_column A string, the column in the validation df that has the
 #' validation values
+#' @export
 validate_submission <- function(
   validation_df,
   prediction_df,
@@ -15,14 +16,16 @@ validate_submission <- function(
   pred_column   = "prediction",
   val_column    = "validation"
 ){
-  column_result <- validate_required_columns(prediction_df, c(name_columns, pred_column))
+  column_result <- validate_required_columns(
+    prediction_df, c(name_columns, pred_column)
+  )
   if (!is.null(column_result)) return(column_result)
   combined_df <- combine_validation_prediction_dfs(
-    prediction_df, validation_df, name_columns, pred_column, val_column
+    validation_df, prediction_df, name_columns, pred_column, val_column
   )
   combined_result <- validate_combined_df(combined_df)
-  if (!is.null(combined_result)) return(combined_df)
-  else return(combined_result)
+  if (!is.null(combined_result)) return(combined_result)
+  else return(combined_df)
 }
 
 
@@ -30,9 +33,7 @@ validate_submission <- function(
 #'
 #' @param df A df from a prediction file
 #' @param required_columns A character of vector of columns the df should have
-#' @importFrom magrittr %>%
-#' @importFrom rlang .data
-#' @importFrom stringr str_c
+#' @export
 validate_required_columns <- function(df, required_columns){
   error_messages <- c()
 
@@ -47,12 +48,8 @@ validate_required_columns <- function(df, required_columns){
       error_messages, create_missing_column_names_message(missing_columns)
     )
   }
-
   if (length(error_messages) != 0) {
-    error_messages %>%
-      stringr::str_c(collapse = ", ") %>%
-      stringr::str_c(".") %>%
-      return()
+    return(combine_error_messages(error_messages))
   } else {
     return(NULL)
   }
@@ -68,7 +65,7 @@ validate_required_columns <- function(df, required_columns){
 #' prediction values
 #' @param val_column A string, the column in the validation df that has the
 #' validation values
-#'
+#' @export
 #' @importFrom dplyr inner_join
 combine_validation_prediction_dfs <- function(
   validation_df,
@@ -84,26 +81,38 @@ combine_validation_prediction_dfs <- function(
   )
 }
 
-validate_combined_df <- function(df, name_columns  = "prediction_name"){
+#' Validate Combined DF
+#'
+#' @param df A combined prediction and validation df, typically a result of
+#' combine_validation_prediction_dfs
+#' @param name_columns A character vector of columns used to identify a
+#' prediction
+#' @param pred_column A string, the column in the prediction df that has the
+#' prediction values
+#' @param val_column A string, the column in the validation df that has the
+#' validation values
+#' @export
+validate_combined_df <- function(
+  df,
+  name_columns  = "prediction_name",
+  pred_column   = "prediction",
+  val_column    = "validation"
+){
   error_messages <- c()
 
   duplicate_rows <- get_duplicate_rows_by_name_columns(df, name_columns)
   missing_rows <- get_missing_rows_by_name_columns(df, name_columns)
 
   if (length(duplicate_rows) != 0) {
-    error_messages <- create_duplicate_column_names_message(duplicate_rows)
+    error_messages <- create_duplicate_rows_message(duplicate_rows)
   }
   if (length(missing_rows) != 0) {
     error_messages <- c(
-      error_messages, create_missing_column_names_message(missing_rows)
+      error_messages, create_missing_rows_message(missing_rows)
     )
   }
-
   if (length(error_messages) != 0) {
-    error_messages %>%
-      stringr::str_c(collapse = ", ") %>%
-      stringr::str_c(".") %>%
-      return()
+    return(combine_error_messages(error_messages))
   } else {
     return(NULL)
   }
@@ -111,6 +120,15 @@ validate_combined_df <- function(df, name_columns  = "prediction_name"){
 
 # helpers ---------------------------------------------------------------------
 
+#' @importFrom magrittr %>%
+combine_error_messages <- function(error_messages){
+  error_messages %>%
+    stringr::str_c(collapse = ", ") %>%
+    stringr::str_c(".")
+}
+
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
 get_duplicate_rows_by_name_columns <- function(
   df, name_columns  = "prediction_name"
 ){
@@ -122,6 +140,8 @@ get_duplicate_rows_by_name_columns <- function(
     dplyr::pull("prediction_name")
 }
 
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
 get_missing_rows_by_name_columns <- function(
   df, name_columns  = "prediction_name"
 ){
@@ -131,6 +151,8 @@ get_missing_rows_by_name_columns <- function(
     dplyr::pull("prediction_name")
 }
 
+#' @importFrom magrittr %>%
+#' @importFrom rlang .data
 get_duplicate_column_names <- function(df){
   df %>%
     colnames %>%
@@ -170,6 +192,7 @@ create_missing_rows_message <- function(missing_rows){
   )
 }
 
+#' @importFrom magrittr %>%
 values_to_list_string <- function(values, sep = ", "){
   values %>%
     unlist %>%
