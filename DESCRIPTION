@@ -12,9 +12,9 @@ Description: Implements a simplified BootLadderBoot approach (https://arxiv.org/
 License: CC0
 Encoding: UTF-8
 LazyData: true
-Imports: plyr, dplyr, magrittr, purrr, foreach, doMC
+Imports: plyr, dplyr, magrittr, purrr, foreach, doMC, stringr, rlang
 Suggests: 
-    testthat,
+    testthat (>= 2.1.0),
     knitr,
     rmarkdown,
     pROC,
