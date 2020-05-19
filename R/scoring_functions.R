@@ -1,7 +1,7 @@
 # standard scoring functions ---------------------------------------------------
 # These functions must take these parameters:
-# gold A numeric vector of gold standard values.
-# pred A numeric vector of prediction values.
+# gold: A numeric vector of gold standard values.
+# pred: A numeric vector of prediction values.
 # gold and pred must be the same length and not have any NA, NaN, Inf values
 # All other paremeters must have defaults
 
@@ -33,9 +33,9 @@ score_pearson <- function(gold, pred){
 
 # factor scoring functions -----------------------------------------------------
 # These functions must take these parameters:
-# gold A factor vector of gold standard values.
-# pred A factor vector of prediction values.
-# gold and pred must be the same length and not have any NA, NaN, values,
+# gold: A factor vector of gold standard values.
+# pred: A factor vector of prediction values.
+# gold and pred must be the same length and not have any NA, NaN values
 # and have the same levels
 # All other paremeters must have defaults
 
