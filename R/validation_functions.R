@@ -212,6 +212,7 @@ combine_error_messages <- function(error_messages){
 
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
+#' @importFrom tidyr unite
 get_duplicate_rows_by_name_columns <- function(
   df, name_columns  = "prediction_name"
 ){
@@ -225,6 +226,7 @@ get_duplicate_rows_by_name_columns <- function(
 
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
+#' @importFrom tidyr unite
 get_missing_rows_by_name_columns <- function(
   df, name_columns  = "prediction_name"
 ){
@@ -247,6 +249,7 @@ get_duplicate_column_names <- function(df){
     dplyr::pull(.data$col)
 }
 
+#' @importFrom stringr str_c
 create_duplicate_column_names_message <- function(duplicate_columns){
   stringr::str_c(
     "Prediction file has duplicate columns: ",
@@ -254,6 +257,7 @@ create_duplicate_column_names_message <- function(duplicate_columns){
   )
 }
 
+#' @importFrom stringr str_c
 create_missing_column_names_message <- function(missing_columns){
   stringr::str_c(
     "Prediction file is missing columns: ",
@@ -261,6 +265,7 @@ create_missing_column_names_message <- function(missing_columns){
   )
 }
 
+#' @importFrom stringr str_c
 create_duplicate_rows_message <- function(duplicate_rows){
   stringr::str_c(
     "Prediction file has duplicate predictions for: ",
@@ -268,6 +273,7 @@ create_duplicate_rows_message <- function(duplicate_rows){
   )
 }
 
+#' @importFrom stringr str_c
 create_missing_rows_message <- function(missing_rows){
   stringr::str_c(
     "Prediction file is missing predictions: ",
@@ -276,6 +282,7 @@ create_missing_rows_message <- function(missing_rows){
 }
 
 #' @importFrom magrittr %>%
+#' @importFrom stringr str_c
 values_to_list_string <- function(values, sep = ", "){
   values %>%
     unlist %>%
