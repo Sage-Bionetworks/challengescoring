@@ -8,16 +8,16 @@ Authors@R: c(person("Robert", "Allaway", email = "robert.allaway@sagebionetworks
   role = c("ctb")),
   person("Michael", "Mason", email = "michael.mason@sagebionetworks.org",
   role = c("ctb")))
-Description: Implements a simplified BootLadderBoot approach (https://arxiv.org/pdf/1607.00091.pdf) for use in computational challenges.
+Description: Implements a simplified BootLadderBoot approach (<arXiv:1607.00091>) for use in computational challenges.
 License: CC0
 Encoding: UTF-8
 LazyData: true
-Imports: plyr, dplyr, magrittr, purrr, foreach, doMC, stringr, rlang
+Imports: plyr, dplyr, magrittr, purrr, foreach, doMC, stringr, rlang, tidyr
 Suggests: 
     testthat (>= 2.1.0),
     knitr,
     rmarkdown,
     pROC,
     Hmisc
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.0
 VignetteBuilder: knitr
