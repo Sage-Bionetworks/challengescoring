@@ -25,7 +25,8 @@ Imports:
     caret,
     survival,
     tidyr,
-    tibble
+    tibble,
+    e1071
 Suggests: 
     testthat (>= 2.1.0),
     knitr,

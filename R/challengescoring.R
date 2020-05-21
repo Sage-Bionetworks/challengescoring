@@ -7,5 +7,6 @@
 #' @import plyr
 #' @import doMC
 #' @import parallel
+#' @import e1071
 #'
 "_PACKAGE"

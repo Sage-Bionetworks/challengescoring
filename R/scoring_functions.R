@@ -98,16 +98,6 @@ c_statistic <- function(gold, pred){
   Hmisc::rcorr.cens(pred, survival::Surv(gold), outx = TRUE)["C Index"]
 }
 
-#' Calculate AUC for a set of binary outcomes and a numeric vector of
-#'prediction values.
-#' @param gold A binary vector of outcome values.
-#' @param pred A numeric vector of prediction values.
-auc <- function(gold, pred){
-  # if(!exists('gold.bin')){
-  #   gold.bin <<- binarize(gold, 5, 'lessThan')
-  # }
-  pROC::roc(gold, pred)$auc %>% as.numeric()
-}
 
 #'Binarize a numeric vector above and below a given threshold.
 #'@param vec Vector to binarize.
