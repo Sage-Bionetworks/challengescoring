@@ -4,7 +4,11 @@
 \alias{validate_required_columns}
 \title{Validate Required Columns}
 \usage{
-validate_required_columns(df, required_columns)
+validate_required_columns(
+  prediction_df,
+  name_columns = "prediction_name",
+  pred_column = "prediction"
+)
 }
 \arguments{
 \item{df}{A df from a prediction file}

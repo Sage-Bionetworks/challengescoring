@@ -9,7 +9,9 @@ validate_submission(
   prediction_df,
   name_columns = "prediction_name",
   pred_column = "prediction",
-  val_column = "validation"
+  val_column = "validation",
+  prediction_validation_funs = NULL,
+  combined_validation_funs = NULL
 )
 }
 \arguments{
@@ -25,6 +27,13 @@ prediction values}
 
 \item{val_column}{A string, the column in the validation df that has the
 validation values}
+
+\item{prediction_validation_funs}{A list of functions to run on the
+prediction df. These functions must take params prediction_df, name_columns,
+and pred_column.}
+
+\item{combined_validation_funs}{A list of functions to run on the
+combined_df. These functions must take the param combined_df.}
 }
 \description{
 Validate Submission
