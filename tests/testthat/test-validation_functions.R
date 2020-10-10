@@ -82,19 +82,43 @@ test_that("validate_required_columns", {
 })
 
 test_that("combine_validation_prediction_dfs", {
-  val_df1  <- tibble::tribble(~prediction_name, ~validation)
-  pred_df1 <- tibble::tribble(~prediction_name, ~prediction)
-  val_df2  <- tibble::tribble(~name_col1, ~name_col2, ~name_col3, ~validation)
-  pred_df2 <- tibble::tribble(~name_col1, ~name_col2, ~name_col4, ~prediction)
+  val_df1  <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    validation = c(1, 0)
+  )
+  pred_df1 <- tibble::tibble(
+    prediction_name = c("p1", "p2"),
+    prediction = c(0, 1)
+  )
+  val_df2  <- tibble::tibble(
+    name_col1 = c("p1", "p2"),
+    name_col2 = c("p3", "p4"),
+    name_col3 = c("p5", "p6"),
+    validation = c(2, 1)
+  )
+  pred_df2 <- tibble::tibble(
+    name_col1 = c("p1", "p2"),
+    name_col2 = c("p3", "p4"),
+    name_col3 = c("p5", "p6"),
+    prediction = c(3, 4)
+  )
   expect_equal(
     combine_validation_prediction_dfs(val_df1, pred_df1),
-    tibble::tribble(~prediction_name, ~validation, ~prediction)
+    tibble::tibble(
+      prediction_name = c("p1", "p2"),
+      validation = c(1, 0),
+      prediction = c(0, 1))
   )
   expect_equal(
     combine_validation_prediction_dfs(
       val_df2, pred_df2, name_columns = c("name_col1", "name_col2")
     ),
-    tibble::tribble(~name_col1, ~name_col2, ~validation, ~prediction)
+    tibble::tibble(
+      name_col1 = c("p1", "p2"),
+      name_col2 = c("p3", "p4"),
+      validation = c(2, 1),
+      prediction = c(3, 4)
+    )
   )
 })
 

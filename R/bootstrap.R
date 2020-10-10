@@ -193,7 +193,13 @@ computeBayesFactor <- function(bootstrapMetricMatrix,
     M <- as.data.frame(bootstrapMetricMatrix - bootstrapMetricMatrix[,refPredIndex])
     K <- apply(M ,2, function(x) {
       k <- sum(x >= 0)/sum(x < 0)
-      return(k)
+      
+      # Logic handles whether reference column is the best set of predictions.
+      if(sum(x >= 0) > sum(x < 0)){
+        return(k)
+      }else{
+        return(1/k)
+      }
     })
     K[refPredIndex] <- 0
     if(invertBayes == T){K <- 1/K}
